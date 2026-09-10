@@ -48,6 +48,8 @@ $ figma-bridge node ymWuCHHNU22zse8nVTVmNN 1:4 --depth 1 --fields layout+text
 
 Same node, same depth: ~1.8 KB via figma-bridge vs ~3 KB via MCP bridge — and the
 `screens` overview costs almost nothing compared to a full-file pull.
+See [BENCHMARKS.md](./BENCHMARKS.md) for multi-round measurements (latency, output size,
+cache behavior, batch mode) with methodology and reproduction steps.
 
 ## Usage
 
