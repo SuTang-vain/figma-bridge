@@ -13,6 +13,8 @@
 为只能用 shell 的 agent（pi、自定义脚本、CI，以及任何不支持 MCP 的 agent）而生，
 也适合被 MCP 的 token 膨胀、套餐限流、桌面端依赖困扰的开发者。
 
+![figma-bridge 演示：screens → node → 批量模式](./assets/demo.gif)
+
 ## 为什么不用 MCP？
 
 - **没有上下文税**——MCP 的工具 schema 会常驻对话上下文；CLI 只需要几行用法说明

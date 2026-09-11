@@ -13,6 +13,8 @@ English | [中文](./README.zh-CN.md)
 Built for shell-only agents (pi, custom scripts, CI, any agent without MCP support) and for
 anyone hitting MCP token bloat, plan-based rate limits, or the desktop-app requirement.
 
+![figma-bridge demo: screens → node → batch mode](./assets/demo.gif)
+
 ## Why not MCP?
 
 - **No context tax** — MCP tool schemas sit in the conversation forever; a CLI needs only a few lines of usage docs
