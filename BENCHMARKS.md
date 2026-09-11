@@ -10,12 +10,12 @@ Comparison target: `figma-mcp` = mcptools → `figma-developer-mcp` MCP server o
 
 | Operation | figma-bridge | via MCP bridge | Speedup |
 |---|---|---|---|
-| `node 1:4 --depth 1 --fields layout+text` (cold, no cache) | 1.17s | 1.30s | 1.1x |
-| `node 1:4 --depth 1` (warm cache) | 1.00s | — | — |
-| `screens` (whole-file outline) | 1.14s | n/a (no equivalent) | — |
-| `node 1:4 --depth 3 --fields all` | 1.11s | 1.30s | 1.2x |
-| `node 2:1 --depth 2 --fields all` | 1.45s | 1.44s | ~1x |
-| `nodejs` batch: screens + 2 nodes in one process | **0.19s** total | ~4s as 3 separate MCP calls | ~20x |
+| `node 1:4 --depth 1 --fields layout+text` (cold, no cache) | 1.31s | 1.33s | ~1x |
+| `node 1:4 --depth 1` (warm cache) | 0.92s | — | — |
+| `screens` (whole-file outline) | 1.07s | n/a (no equivalent) | — |
+| `node 1:4 --depth 3 --fields all` | 1.03s | 1.24s | 1.2x |
+| `node 2:1 --depth 2 --fields all` | 1.11s | 1.44s | 1.3x |
+| `nodejs` batch: screens + 2 nodes in one process | **0.18s** total | ~4s as 3 separate MCP calls | ~20x |
 
 Note: MCP-bridge timings here are with a warm npx cache; cold npx adds several more
 seconds per call (measured up to 3.1s). figma-bridge has no npx layer at all.
@@ -24,14 +24,17 @@ seconds per call (measured up to 3.1s). figma-bridge has no npx layer at all.
 
 | Query | figma-bridge | via MCP bridge | Saving |
 |---|---|---|---|
-| node 1:4, depth 1, `fields=layout+text` | **1,839 B** | 3,015 B | −39% |
-| node 1:4, depth 1, `fields=all` | 2,847 B | 3,015 B | −6% |
-| node 1:4, depth 3, `fields=all` | 3,393 B | 3,673 B | −8% |
+| node 1:4, depth 1, `fields=layout+text` | **1,783 B** | 3,015 B | −41% |
+| node 1:4, depth 1, `fields=all` | 2,791 B | 3,015 B | −7% |
+| node 1:4, depth 3, `fields=all` | 3,337 B | 3,673 B | −9% |
 | whole-file outline | **1,846 B** (`screens`) | only possible via full-file pull | — |
 
 The biggest saving is structural, not per-node: a `screens` outline (~1.8 KB) plus one
 targeted `node` call answers most "what is in this file / implement this screen" tasks
-without ever pulling the full file.
+without ever pulling the full file. Per-node savings vary with content: v0.2.0's extra
+compaction (dropping default `layout={mode:"none"}` and TEXT names that duplicate their
+content) helped ~3% on this absolutely-positioned file, and helps more on auto-layout- and
+text-heavy files where those patterns are common.
 
 ## Caching behavior
 

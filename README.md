@@ -68,7 +68,8 @@ cliLog(await getNode('FILE_KEY', '1:4', { depth: 2, fields: 'layout+text' }))
 EOF
 ```
 
-- URL parsing: fileKey is the segment after `/design/`; `node-id=1-4` becomes `"1:4"`
+- Full Figma URLs are accepted everywhere — paste the link, no manual fileKey/nodeId extraction:
+  `figma-bridge node 'https://www.figma.com/design/<key>/Name?node-id=1-4'`
 - `--fields` presets: `all` (default), `layout+text`, `content`, `visuals`, `layout`
 - Responses are cached per file and reused while `lastModified` is unchanged
 - Agent-facing docs: [SKILL.md](./SKILL.md)

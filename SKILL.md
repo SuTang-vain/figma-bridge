@@ -11,8 +11,9 @@ Auth: `$FIGMA_API_KEY` or `~/.config/figma/api-key` (already configured on this 
 
 ## URL parsing
 
-- fileKey: segment after `/design/` (or `/file/`) in the URL
-- nodeId: `node-id=1-4` in the URL is written `"1:4"` (colons, not dashes)
+Everywhere a fileKey or nodeId is expected, a full Figma URL works too — paste the link
+as-is. fileKey is the segment after `/design/` (or `/file/`); the URL's `node-id=1-4`
+becomes nodeId `"1:4"` automatically (an explicit nodeId argument overrides it).
 
 ## Progressive workflow (important for token efficiency)
 

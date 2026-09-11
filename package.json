@@ -1,7 +1,7 @@
 {
   "name": "figma-bridge",
-  "version": "0.1.0",
-  "description": "",
+  "version": "0.2.0",
+  "description": "Figma design data CLI for AI agents — no MCP, no desktop app",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,5 +12,13 @@
   "type": "module",
   "dependencies": {
     "figma-developer-mcp": "^0.13.2"
-  }
+  },
+  "bin": {
+    "figma-bridge": "bin/figma-bridge.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "SKILL.md"
+  ]
 }

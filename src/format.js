@@ -24,10 +24,21 @@ const PROP_ORDER = ['layout', 'fills', 'strokes', 'strokeWeight', 'effects', 'op
 
 function nodeLine(n, indent) {
   const type = (n.type || 'NODE').toUpperCase();
-  const name = n.name ? ` ${JSON.stringify(n.name)}` : '';
+  // Absolute positioning (mode:"none") is the default; omit layouts that say nothing else.
+  // Note: keys may exist with undefined values (dropped by JSON but present at runtime).
+  const empty = (x) => x == null || (typeof x === 'object' && !Array.isArray(x) && Object.values(x).every(empty));
+  const layout = n.layout && typeof n.layout === 'object'
+    && Object.entries(n.layout).every(([k, v]) => (k === 'mode' && v === 'none') || empty(v))
+    ? undefined
+    : n.layout;
+  // TEXT nodes whose name merely repeats the text content don't need both.
+  // Text may contain literal "\n" sequences; normalize before comparing.
+  const norm = (s) => String(s).replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+  const dupName = n.text && n.name && norm(n.name) === norm(n.text);
+  const name = n.name && !dupName ? ` ${JSON.stringify(n.name)}` : '';
   const parts = [];
   for (const key of PROP_ORDER) {
-    const v = val(n[key]);
+    const v = val(key === 'layout' ? layout : n[key]);
     if (v !== undefined) parts.push(`${key}=${v}`);
   }
   return `${'  '.repeat(indent)}[${type}]${name} #${n.id}${parts.length ? ' ' + parts.join(' ') : ''}`;

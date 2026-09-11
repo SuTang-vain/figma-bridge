@@ -67,7 +67,8 @@ cliLog(await getNode('FILE_KEY', '1:4', { depth: 2, fields: 'layout+text' }))
 EOF
 ```
 
-- URL 解析：fileKey 是 `/design/` 后的一段；`node-id=1-4` 写作 `"1:4"`
+- 所有子命令直接接受完整 Figma 链接，无需手动提取 fileKey/nodeId：
+  `figma-bridge node 'https://www.figma.com/design/<key>/Name?node-id=1-4'`
 - `--fields` 预设：`all`（默认）、`layout+text`、`content`、`visuals`、`layout`
 - 响应按文件缓存，`lastModified` 未变时复用
 - 面向 agent 的文档：[SKILL.md](./SKILL.md)

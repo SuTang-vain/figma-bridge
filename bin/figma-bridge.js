@@ -26,15 +26,16 @@ function parseFlags(args) {
 
 const USAGE = `figma-bridge — Figma design data for shell-only agents (no MCP, no desktop app)
 
-  figma-bridge screens <fileKey>                         list pages + top-level frames
-  figma-bridge node <fileKey> <nodeId> [--depth 2] [--fields all|layout+text|content|visuals|layout]
-  figma-bridge images <fileKey> <id1,id2> [-o ./assets] [--format png|svg] [--scale 2]
-  figma-bridge nodejs                                    run a JS script from stdin with helpers preloaded
+  figma-bridge screens <fileKey|url>                      list pages + top-level frames
+  figma-bridge node <fileKey|url> [nodeId] [--depth 2] [--fields all|layout+text|content|visuals|layout]
+  figma-bridge images <fileKey|url> [id1,id2] [-o ./assets] [--format png|svg] [--scale 2]
+  figma-bridge nodejs                                     run a JS script from stdin with helpers preloaded
 
-nodejs mode helpers: getScreens(fileKey), getNode(fileKey, nodeId, opts),
-getImages(fileKey, ids, outDir, opts), cliLog(x). Top-level await is supported.
+Full URLs are accepted everywhere: nodeId defaults to the URL's node-id.
 
-fileKey: the segment after /design/ in a Figma URL; nodeId: 1-4 in the URL is "1:4" here.
+nodejs mode helpers: getScreens(ref), getNode(ref, nodeId?, opts),
+getImages(ref, ids?, outDir, opts), cliLog(x). Top-level await is supported.
+
 Auth: $FIGMA_API_KEY or ~/.config/figma/api-key.`;
 
 async function main() {
@@ -43,12 +44,12 @@ async function main() {
 
   switch (cmd) {
     case 'screens': {
-      if (!pos[0]) throw new Error('usage: figma-bridge screens <fileKey>');
+      if (!pos[0]) throw new Error('usage: figma-bridge screens <fileKey|url>');
       console.log(await getScreens(pos[0], { depth: Number(flags.depth) || 2 }));
       break;
     }
     case 'node': {
-      if (!pos[0] || !pos[1]) throw new Error('usage: figma-bridge node <fileKey> <nodeId>');
+      if (!pos[0]) throw new Error('usage: figma-bridge node <fileKey|url> [nodeId]');
       console.log(await getNode(pos[0], pos[1], {
         depth: flags.depth !== undefined ? Number(flags.depth) : 2,
         fields: flags.fields || 'all',
@@ -56,7 +57,7 @@ async function main() {
       break;
     }
     case 'images': {
-      if (!pos[0] || !pos[1]) throw new Error('usage: figma-bridge images <fileKey> <id1,id2>');
+      if (!pos[0]) throw new Error('usage: figma-bridge images <fileKey|url> [id1,id2]');
       const saved = await getImages(pos[0], pos[1], flags.o || './figma-assets', {
         format: flags.format || 'png',
         scale: Number(flags.scale) || 2,

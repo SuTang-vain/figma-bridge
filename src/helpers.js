@@ -9,6 +9,7 @@ import {
 } from 'figma-developer-mcp';
 import { fetchFileTree, fetchNode, downloadImages } from './api.js';
 import { formatDesign, formatScreens } from './format.js';
+import { parseFigmaUrl } from './url.js';
 
 const FIELD_PRESETS = {
   all: allExtractors,
@@ -27,20 +28,33 @@ function resolveExtractors(fields = 'all') {
 }
 
 // Progressive step 1: list pages and top-level frames of a file.
-export async function getScreens(fileKey, { depth = 2 } = {}) {
+// `ref` accepts a fileKey or a full Figma URL.
+export async function getScreens(ref, { depth = 2 } = {}) {
+  const { fileKey } = parseFigmaUrl(ref);
   const { data, cached } = await fetchFileTree(fileKey, depth);
   return formatScreens(data) + (cached ? '\n(cache hit)' : '');
 }
 
 // Progressive step 2: simplified data for one node subtree.
-export async function getNode(fileKey, nodeId, { depth = 2, fields = 'all' } = {}) {
-  const { data, cached, lastModified } = await fetchNode(fileKey, nodeId, depth);
+// `ref` accepts a fileKey or URL; nodeId falls back to the URL's node-id.
+export async function getNode(ref, nodeId, { depth = 2, fields = 'all' } = {}) {
+  const parsed = parseFigmaUrl(ref);
+  const id = nodeId || parsed.nodeId;
+  if (!id) throw new Error('nodeId required (pass one or use a URL containing node-id)');
+  const { data, cached, lastModified } = await fetchNode(parsed.fileKey, id, depth);
   const design = await simplifyRawFigmaObject(data, resolveExtractors(fields), { maxDepth: depth });
   return formatDesign(design, { meta: { lastModified, cached } });
 }
 
 // Download rendered images of nodes to a directory.
-export async function getImages(fileKey, nodeIds, outDir, opts = {}) {
-  const ids = Array.isArray(nodeIds) ? nodeIds : String(nodeIds).split(',');
-  return downloadImages(fileKey, ids, outDir, opts);
+// ids may be omitted when `ref` is a URL containing node-id.
+export async function getImages(ref, nodeIds, outDir = './figma-assets', opts = {}) {
+  const parsed = parseFigmaUrl(ref);
+  let ids = nodeIds;
+  if (ids == null || (Array.isArray(ids) && !ids.length)) {
+    if (!parsed.nodeId) throw new Error('node ids required (pass them or use a URL containing node-id)');
+    ids = [parsed.nodeId];
+  }
+  if (!Array.isArray(ids)) ids = String(ids).split(',');
+  return downloadImages(parsed.fileKey, ids, outDir, opts);
 }
