@@ -5,6 +5,7 @@
 English | [中文](./README.zh-CN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/figma-bridge-cli)](https://www.npmjs.com/package/figma-bridge-cli)
 [![GitHub stars](https://img.shields.io/github/stars/SuTang-vain/figma-bridge?style=flat)](https://github.com/SuTang-vain/figma-bridge/stargazers)
 [![Node.js](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)](https://nodejs.org)
 
@@ -25,13 +26,19 @@ anyone hitting MCP token bloat, plan-based rate limits, or the desktop-app requi
 ## Install
 
 ```bash
-git clone https://github.com/SuTang-vain/figma-bridge ~/figma-bridge
-cd ~/figma-bridge && npm install
-mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/figma-bridge
+npm i -g figma-bridge-cli
 
 # Auth: Figma → Settings → Security → Personal access tokens
 mkdir -p ~/.config/figma && chmod 700 ~/.config/figma
 printf 'YOUR_TOKEN' > ~/.config/figma/api-key && chmod 600 ~/.config/figma/api-key
+```
+
+From source:
+
+```bash
+git clone https://github.com/SuTang-vain/figma-bridge ~/figma-bridge
+cd ~/figma-bridge && npm install
+mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/figma-bridge
 ```
 
 ## See it work

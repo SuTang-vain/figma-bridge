@@ -2,12 +2,16 @@
   "name": "figma-bridge-cli",
   "version": "0.2.0",
   "description": "Figma design data CLI for AI agents — no MCP, no desktop app",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "figma",
+    "cli",
+    "ai-agent",
+    "llm",
+    "mcp",
+    "design-to-code",
+    "agent"
+  ],
+  "author": "SuTang-vain",
   "license": "MIT",
   "type": "module",
   "dependencies": {
@@ -20,5 +24,14 @@
     "bin",
     "src",
     "SKILL.md"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SuTang-vain/figma-bridge.git"
+  },
+  "homepage": "https://github.com/SuTang-vain/figma-bridge#readme",
+  "bugs": "https://github.com/SuTang-vain/figma-bridge/issues",
+  "engines": {
+    "node": ">=18"
+  }
 }

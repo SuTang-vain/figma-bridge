@@ -5,6 +5,7 @@
 [English](./README.md) | 中文
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/figma-bridge-cli)](https://www.npmjs.com/package/figma-bridge-cli)
 [![GitHub stars](https://img.shields.io/github/stars/SuTang-vain/figma-bridge?style=flat)](https://github.com/SuTang-vain/figma-bridge/stargazers)
 [![Node.js](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)](https://nodejs.org)
 
@@ -25,13 +26,19 @@
 ## 安装
 
 ```bash
-git clone https://github.com/SuTang-vain/figma-bridge ~/figma-bridge
-cd ~/figma-bridge && npm install
-mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/figma-bridge
+npm i -g figma-bridge-cli
 
 # 认证：Figma → Settings → Security → Personal access tokens
 mkdir -p ~/.config/figma && chmod 700 ~/.config/figma
 printf '你的TOKEN' > ~/.config/figma/api-key && chmod 600 ~/.config/figma/api-key
+```
+
+从源码安装：
+
+```bash
+git clone https://github.com/SuTang-vain/figma-bridge ~/figma-bridge
+cd ~/figma-bridge && npm install
+mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/figma-bridge
 ```
 
 ## 实际效果
