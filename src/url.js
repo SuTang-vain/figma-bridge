@@ -37,9 +37,8 @@ export function parseFigmaUrl(input) {
   }
   const m = u.pathname.match(/\/(?:design|file|board|proto)\/([A-Za-z0-9]+)/);
   if (!m) throw new Error(`could not find a Figma file key in URL ${JSON.stringify(raw)}`);
+  const fileKey = assertFileKey(m[1]);
   const nid = u.searchParams.get('node-id');
-  return {
-    fileKey: assertFileKey(m[1]),
-    nodeId: nid ? assertNodeId(nid.replace(/-/g, ':')) : undefined,
-  };
+  if (!nid) return { fileKey };
+  return { fileKey, nodeId: assertNodeId(nid.replace(/-/g, ':')) };
 }
