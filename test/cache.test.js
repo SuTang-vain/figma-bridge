@@ -12,12 +12,17 @@ const json = (obj) => new Response(JSON.stringify(obj), { status: 200, headers: 
 function harness(t) {
   const root = mkdtempSync(join(tmpdir(), 'fb-cache-test-'));
   const prev = process.env.FIGMA_BRIDGE_CACHE_DIR;
+  const prevKey = process.env.FIGMA_API_KEY;
   const realFetch = globalThis.fetch;
   process.env.FIGMA_BRIDGE_CACHE_DIR = root;
+  // Never depend on the developer's ~/.config/figma/api-key: getToken() reads it eagerly.
+  process.env.FIGMA_API_KEY = 'test-token';
   t.after(() => {
     globalThis.fetch = realFetch;
     if (prev === undefined) delete process.env.FIGMA_BRIDGE_CACHE_DIR;
     else process.env.FIGMA_BRIDGE_CACHE_DIR = prev;
+    if (prevKey === undefined) delete process.env.FIGMA_API_KEY;
+    else process.env.FIGMA_API_KEY = prevKey;
     rmSync(root, { recursive: true, force: true });
   });
   return root;
