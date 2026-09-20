@@ -86,7 +86,10 @@ export function formatScreens(fileData) {
     for (const frame of page.children || []) {
       const bb = frame.absoluteBoundingBox || {};
       const dims = bb.width ? ` ${Math.round(bb.width)}x${Math.round(bb.height)}` : '';
-      lines.push(`  [${frame.type}] ${JSON.stringify(frame.name)} #${frame.id}${dims}${frame.children ? ` (${frame.children.length} children)` : ''}`);
+      // At the depth limit Figma returns children: [] — a count of zero says nothing.
+      const kids = frame.children?.length || 0;
+      const count = kids ? ` (${kids} children)` : '';
+      lines.push(`  [${frame.type}] ${JSON.stringify(frame.name)} #${frame.id}${dims}${count}`);
     }
   }
   return lines.join('\n');
