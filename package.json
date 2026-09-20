@@ -1,6 +1,6 @@
 {
   "name": "figma-bridge-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Figma design data CLI for AI agents — no MCP, no desktop app",
   "keywords": [
     "figma",
@@ -26,7 +26,9 @@
   "files": [
     "bin",
     "src",
-    "SKILL.md"
+    "SKILL.md",
+    "BENCHMARKS.md",
+    "assets/demo.gif"
   ],
   "repository": {
     "type": "git",
