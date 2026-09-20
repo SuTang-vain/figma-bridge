@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 
 export function getToken() {
   if (process.env.FIGMA_API_KEY) return process.env.FIGMA_API_KEY;
@@ -25,10 +25,18 @@ async function apiFetch(path) {
   return res.json();
 }
 
-const CACHE_ROOT = join(homedir(), '.cache', 'figma-bridge');
+// Cache root is overridable so benchmarks and tests never touch the real user cache.
+function cacheRoot() {
+  return process.env.FIGMA_BRIDGE_CACHE_DIR || join(homedir(), '.cache', 'figma-bridge');
+}
 
+// Second line of defence: even a validated fileKey must stay inside the cache root.
 function cacheDir(fileKey) {
-  const dir = join(CACHE_ROOT, fileKey);
+  const root = resolve(cacheRoot());
+  const dir = resolve(root, fileKey);
+  if (!dir.startsWith(root + sep)) {
+    throw new Error(`refusing to use a cache path outside ${root}: ${dir}`);
+  }
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -77,19 +85,23 @@ export async function fetchNode(fileKey, nodeId, depth = 2) {
 }
 
 // Render nodes to image URLs, then download to outDir. Returns saved file paths.
+// The directory is only created once there is something to write, so a failed
+// images call never leaves an empty output directory behind.
 export async function downloadImages(fileKey, nodeIds, outDir, { format = 'png', scale = 2 } = {}) {
-  mkdirSync(outDir, { recursive: true });
   const ids = nodeIds.join(',');
   const { images, err } = await apiFetch(
     `/images/${fileKey}?ids=${encodeURIComponent(ids)}&format=${format}&scale=${scale}`
   );
   if (err) throw new Error('images endpoint: ' + JSON.stringify(err));
+  const entries = Object.entries(images || {}).filter(([, url]) => url);
+  if (!entries.length) return [];
+  mkdirSync(outDir, { recursive: true });
   const saved = [];
-  for (const [id, url] of Object.entries(images || {})) {
-    if (!url) continue;
+  for (const [id, url] of entries) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`download ${id}: HTTP ${res.status}`);
-    const file = join(outDir, `${id.replace(/[:;]/g, '-')}.${format}`);
+    // Ids are validated upstream; sanitize anyway so they can never escape outDir.
+    const file = join(outDir, `${id.replace(/[^A-Za-z0-9._-]/g, '-')}.${format}`);
     writeFileSync(file, Buffer.from(await res.arrayBuffer()));
     saved.push(file);
   }

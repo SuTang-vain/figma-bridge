@@ -9,7 +9,7 @@ import {
 } from 'figma-developer-mcp';
 import { fetchFileTree, fetchNode, downloadImages } from './api.js';
 import { formatDesign, formatScreens } from './format.js';
-import { parseFigmaUrl } from './url.js';
+import { parseFigmaUrl, assertNodeId } from './url.js';
 
 const FIELD_PRESETS = {
   all: allExtractors,
@@ -41,8 +41,10 @@ export async function getNode(ref, nodeId, { depth = 2, fields = 'all' } = {}) {
   const parsed = parseFigmaUrl(ref);
   const id = nodeId || parsed.nodeId;
   if (!id) throw new Error('nodeId required (pass one or use a URL containing node-id)');
+  // Resolve extractors before touching the network: an unknown --fields must fail fast.
+  const extractors = resolveExtractors(fields);
   const { data, cached, lastModified } = await fetchNode(parsed.fileKey, id, depth);
-  const design = await simplifyRawFigmaObject(data, resolveExtractors(fields), { maxDepth: depth });
+  const design = await simplifyRawFigmaObject(data, extractors, { maxDepth: depth });
   return formatDesign(design, { meta: { lastModified, cached } });
 }
 
@@ -56,5 +58,6 @@ export async function getImages(ref, nodeIds, outDir = './figma-assets', opts = 
     ids = [parsed.nodeId];
   }
   if (!Array.isArray(ids)) ids = String(ids).split(',');
+  ids = ids.map((id) => assertNodeId(String(id).trim()));
   return downloadImages(parsed.fileKey, ids, outDir, opts);
 }
