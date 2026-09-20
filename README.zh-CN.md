@@ -41,6 +41,27 @@ cd ~/figma-bridge && npm install
 mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/figma-bridge
 ```
 
+## 在 pi 里使用
+
+```bash
+pi install npm:figma-bridge-cli     # 注册一个 `figma` 工具 + figma-bridge 技能
+```
+
+同一个包仍然是普通 CLI：`npm i -g figma-bridge-cli` 供任何 shell-only agent 使用，不依赖 pi。在 pi 里扩展只暴露
+**一个** `figma` 工具（用 `mode` 枚举区分 `screens | node | images`），而不是每个操作一个工具——工具 schema 是
+每轮都要付的上下文税。
+
+`figma-developer-mcp` 依赖仅作为库使用（Framelink 的简化管线），不启动任何 MCP 服务或传输层。
+
+## 与同类包的关系
+
+另外两个 pi 包覆盖相邻领域，且都做得不错：[`@pi-stef/figma`](https://www.npmjs.com/package/@pi-stef/figma)（20 个 REST 工具，自有配置文件）与
+[`@bigmints.com/pi-figma-bridge`](https://www.npmjs.com/package/@bigmints.com/pi-figma-bridge)（7 个工具，桥接 Figma 桌面插件）。
+紧凑输出、缓存、超长输出落盘、图片导出**并非**本项目独有——它们也有，桌面插件路线还额外支持带 dry-run 的写入。
+
+本项目补的是：**面向所有 agent**（CLI 不限于 pi）、把使用指引以**技能**形式随包发布，以及**公开可复现**的性能数据
+（[BENCHMARKS.md](./BENCHMARKS.md) + `./bench.sh`，含每轮原始输出）。
+
 ## 实际效果
 
 ```bash
@@ -80,7 +101,7 @@ EOF
   `figma-bridge node 'https://www.figma.com/design/<key>/Name?node-id=1-4'`
 - `--fields` 预设：`all`（默认）、`layout+text`、`content`、`visuals`、`layout`
 - 响应按文件缓存，`lastModified` 未变时复用
-- 面向 agent 的文档：[SKILL.md](./SKILL.md)
+- 面向 agent 的文档：[skills/figma-bridge/SKILL.md](./skills/figma-bridge/SKILL.md)
 
 ## 工作原理
 

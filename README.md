@@ -41,6 +41,31 @@ cd ~/figma-bridge && npm install
 mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/figma-bridge
 ```
 
+## Use it from pi
+
+```bash
+pi install npm:figma-bridge-cli     # adds one `figma` tool + the figma-bridge skill
+```
+
+The same package stays a plain CLI — `npm i -g figma-bridge-cli` works with any shell-only agent, no pi
+required. Inside pi the extension exposes **one** tool with a `mode` enum (`screens | node | images`) rather
+than a tool per operation, because tool schemas are a context tax that is paid on every turn.
+
+The `figma-developer-mcp` dependency is used strictly as a library (Framelink's simplification pipeline);
+no MCP server or transport is started.
+
+## Where it fits
+
+Two other pi packages cover adjacent ground, and both are good: [`@pi-stef/figma`](https://www.npmjs.com/package/@pi-stef/figma)
+(20 REST tools with its own config file) and [`@bigmints.com/pi-figma-bridge`](https://www.npmjs.com/package/@bigmints.com/pi-figma-bridge)
+(7 tools bridged to the Figma desktop plugin). Compact output, caching, truncation-with-spill and image
+export are **not** unique to this project — they ship those too, and the desktop-plugin route additionally
+supports writes with a dry run.
+
+What this project adds: it is **agent-agnostic** (the CLI works with any harness, not only pi), it ships its
+agent guidance as a **skill** rather than only tool schemas, and its performance claims are **published and
+reproducible** ([BENCHMARKS.md](./BENCHMARKS.md) + `./bench.sh`, including the raw per-round output).
+
 ## See it work
 
 ```bash
@@ -81,7 +106,7 @@ EOF
   `figma-bridge node 'https://www.figma.com/design/<key>/Name?node-id=1-4'`
 - `--fields` presets: `all` (default), `layout+text`, `content`, `visuals`, `layout`
 - Responses are cached per file and reused while `lastModified` is unchanged
-- Agent-facing docs: [SKILL.md](./SKILL.md)
+- Agent-facing docs: [skills/figma-bridge/SKILL.md](./skills/figma-bridge/SKILL.md)
 
 ## How it works
 
