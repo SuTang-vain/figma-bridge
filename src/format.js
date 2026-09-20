@@ -2,6 +2,12 @@
 // Mimics the Framelink MCP YAML-ish output agents are already trained on,
 // with extra compaction: empty props omitted, long decimals rounded.
 
+// Shared wording for the cache marker: null when the response was not served from cache.
+export function cacheNote(meta) {
+  if (!meta?.cached) return null;
+  return meta.unverified ? 'cache hit, unverified' : 'cache hit';
+}
+
 function val(v) {
   if (v == null) return undefined;
   if (typeof v === 'number') return Math.round(v * 100) / 100;
@@ -52,7 +58,8 @@ function emitNode(n, indent, lines) {
 export function formatDesign(design, { meta } = {}) {
   const lines = [];
   lines.push(`NAME: ${JSON.stringify(design.name)}`);
-  if (meta?.lastModified) lines.push(`LAST_MODIFIED: ${meta.lastModified}${meta.cached ? ' (cache hit)' : ''}`);
+  const note = cacheNote(meta);
+  if (meta?.lastModified) lines.push(`LAST_MODIFIED: ${meta.lastModified}${note ? ` (${note})` : ''}`);
 
   const styles = design.globalVars?.styles || {};
   const styleKeys = Object.keys(styles);
@@ -74,8 +81,7 @@ export function formatDesign(design, { meta } = {}) {
 
 // Compact screen/page listing from a raw file tree (depth>=2).
 export function formatScreens(fileData) {
-  const lines = [`NAME: ${JSON.stringify(fileData.name)}`, `LAST_MODIFIED: ${fileData.lastModified}`];
-  for (const page of fileData.document?.children || []) {
+  const lines = [`NAME: ${JSON.stringify(fileData.name)}`, `LAST_MODIFIED: ${fileData.lastModified}`];  for (const page of fileData.document?.children || []) {
     lines.push(`\n[PAGE] ${JSON.stringify(page.name)} #${page.id}`);
     for (const frame of page.children || []) {
       const bb = frame.absoluteBoundingBox || {};

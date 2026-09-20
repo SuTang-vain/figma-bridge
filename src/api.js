@@ -42,22 +42,32 @@ function cacheDir(fileKey) {
 }
 
 // Fetch raw API JSON, reusing the cached copy when the file's lastModified is unchanged.
+// If the metadata check itself fails (offline, rate-limited, lost permission) the cached
+// copy is still served, flagged `unverified` so callers can say so instead of failing.
 // `kind` distinguishes endpoints (e.g. 'file-depth2', 'nodes-1:4-depth3').
 export async function fetchCached(fileKey, kind, path) {
   const dir = cacheDir(fileKey);
   const hash = createHash('sha1').update(kind).digest('hex').slice(0, 12);
   const rawPath = join(dir, `raw-${hash}.json`);
   const metaPath = join(dir, `raw-${hash}.meta`);
+  const cachedCopy = () => JSON.parse(readFileSync(rawPath, 'utf8'));
+  const hasCache = existsSync(rawPath) && existsSync(metaPath);
 
   let lastModified = null;
+  let metaChecked = false;
   try {
     const meta = await apiFetch(`/files/${fileKey}?depth=1`);
     lastModified = meta.lastModified;
-  } catch { /* offline or no permission — fall back to cache if present */ }
+    metaChecked = true;
+  } catch { /* offline or no permission — fall back to the local copy below */ }
 
-  if (lastModified && existsSync(rawPath) && existsSync(metaPath)) {
-    if (readFileSync(metaPath, 'utf8') === lastModified) {
-      return { data: JSON.parse(readFileSync(rawPath, 'utf8')), cached: true, lastModified };
+  if (hasCache) {
+    const cachedAt = readFileSync(metaPath, 'utf8');
+    if (!metaChecked) {
+      return { data: cachedCopy(), cached: true, unverified: true, lastModified: cachedAt };
+    }
+    if (cachedAt === lastModified) {
+      return { data: cachedCopy(), cached: true, lastModified };
     }
   }
   const data = await apiFetch(path);

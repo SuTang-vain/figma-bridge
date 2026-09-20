@@ -8,7 +8,7 @@ import {
   layoutOnly,
 } from 'figma-developer-mcp';
 import { fetchFileTree, fetchNode, downloadImages } from './api.js';
-import { formatDesign, formatScreens } from './format.js';
+import { formatDesign, formatScreens, cacheNote } from './format.js';
 import { parseFigmaUrl, assertNodeId } from './url.js';
 
 const FIELD_PRESETS = {
@@ -31,8 +31,9 @@ function resolveExtractors(fields = 'all') {
 // `ref` accepts a fileKey or a full Figma URL.
 export async function getScreens(ref, { depth = 2 } = {}) {
   const { fileKey } = parseFigmaUrl(ref);
-  const { data, cached } = await fetchFileTree(fileKey, depth);
-  return formatScreens(data) + (cached ? '\n(cache hit)' : '');
+  const { data, cached, unverified } = await fetchFileTree(fileKey, depth);
+  const note = cacheNote({ cached, unverified });
+  return formatScreens(data) + (note ? `\n(${note})` : '');
 }
 
 // Progressive step 2: simplified data for one node subtree.
@@ -43,9 +44,9 @@ export async function getNode(ref, nodeId, { depth = 2, fields = 'all' } = {}) {
   if (!id) throw new Error('nodeId required (pass one or use a URL containing node-id)');
   // Resolve extractors before touching the network: an unknown --fields must fail fast.
   const extractors = resolveExtractors(fields);
-  const { data, cached, lastModified } = await fetchNode(parsed.fileKey, id, depth);
+  const { data, cached, unverified, lastModified } = await fetchNode(parsed.fileKey, id, depth);
   const design = await simplifyRawFigmaObject(data, extractors, { maxDepth: depth });
-  return formatDesign(design, { meta: { lastModified, cached } });
+  return formatDesign(design, { meta: { lastModified, cached, unverified } });
 }
 
 // Download rendered images of nodes to a directory.
