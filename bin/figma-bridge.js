@@ -7,22 +7,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getScreens, getNode, getImages } from '../src/helpers.js';
+import { parseFlags } from '../src/flags.js';
 
-const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', 'src');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SRC = join(ROOT, 'src');
+const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
 
-function parseFlags(args) {
-  const pos = [];
-  const flags = {};
-  for (let i = 0; i < args.length; i++) {
-    if (args[i].startsWith('--')) {
-      const key = args[i].slice(2);
-      const next = args[i + 1];
-      if (next !== undefined && !next.startsWith('--')) { flags[key] = next; i++; }
-      else flags[key] = true;
-    } else pos.push(args[i]);
-  }
-  return { pos, flags };
-}
+const HELP_CMDS = new Set(['help', '-h', '--help']);
+const VERSION_CMDS = new Set(['version', '-v', '-V', '--version']);
 
 const USAGE = `figma-bridge — Figma design data for shell-only agents (no MCP, no desktop app)
 
@@ -30,7 +22,10 @@ const USAGE = `figma-bridge — Figma design data for shell-only agents (no MCP,
   figma-bridge node <fileKey|url> [nodeId] [--depth 2] [--fields all|layout+text|content|visuals|layout]
   figma-bridge images <fileKey|url> [id1,id2] [-o ./assets] [--format png|svg] [--scale 2]
   figma-bridge nodejs                                     run a JS script from stdin with helpers preloaded
+  figma-bridge --help | -h        show this help
+  figma-bridge --version | -v     print the version
 
+Flags accept one or two dashes, so -o ./assets and --o ./assets are equivalent.
 Full URLs are accepted everywhere: nodeId defaults to the URL's node-id.
 
 nodejs mode helpers: getScreens(ref), getNode(ref, nodeId?, opts),
@@ -39,8 +34,18 @@ getImages(ref, ids?, outDir, opts), cliLog(x). Top-level await is supported.
 Auth: $FIGMA_API_KEY or ~/.config/figma/api-key.`;
 
 async function main() {
-  const [cmd, ...rest] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const [cmd, ...rest] = argv;
   const { pos, flags } = parseFlags(rest);
+
+  if (cmd === undefined || HELP_CMDS.has(cmd) || flags.help || flags.h) {
+    console.log(USAGE);
+    return;
+  }
+  if (VERSION_CMDS.has(cmd) || flags.version || flags.v) {
+    console.log(VERSION);
+    return;
+  }
 
   switch (cmd) {
     case 'screens': {
@@ -80,8 +85,9 @@ async function main() {
       process.exit(r.status ?? 1);
     }
     default:
-      console.log(USAGE);
-      process.exit(cmd ? 1 : 0);
+      console.error(`figma-bridge: unknown command '${cmd}'\n`);
+      console.error(USAGE);
+      process.exit(1);
   }
 }
 
