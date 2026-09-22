@@ -1,11 +1,13 @@
 # figma-bridge
 
-**面向 AI agent 的 Figma 设计数据 CLI——无需 MCP，无需桌面客户端。**
+**面向 AI agent 的 Figma 设计数据：既是给 shell-only agent 的 CLI，也是 [pi 包](https://pi.dev/packages/figma-bridge-cli)（一个紧凑工具）——无需 MCP，无需桌面客户端。**
 
 [English](./README.md) | 中文
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/figma-bridge-cli)](https://www.npmjs.com/package/figma-bridge-cli)
+[![pi-package](https://img.shields.io/badge/pi--package-listed-blue)](https://pi.dev/packages/figma-bridge-cli)
+[![GitHub release](https://img.shields.io/github/v/release/SuTang-vain/figma-bridge)](https://github.com/SuTang-vain/figma-bridge/releases)
 [![GitHub stars](https://img.shields.io/github/stars/SuTang-vain/figma-bridge?style=flat)](https://github.com/SuTang-vain/figma-bridge/stargazers)
 [![Node.js](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)](https://nodejs.org)
 
@@ -33,6 +35,9 @@ mkdir -p ~/.config/figma && chmod 700 ~/.config/figma
 printf '你的TOKEN' > ~/.config/figma/api-key && chmod 600 ~/.config/figma/api-key
 ```
 
+需要 Node 18+。上游 `figma-developer-mcp` 库声明 `engines: >=20.20.0`；本项目用到的代码路径已在 CI 的 18.20 上验证，
+因此 18 实际可用——但若你的包管理器严格校验 engines，或想遵循上游的最低版本，建议用 Node 20.20 以上。
+
 从源码安装：
 
 ```bash
@@ -45,6 +50,14 @@ mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/f
 
 ```bash
 pi install npm:figma-bridge-cli     # 注册一个 `figma` 工具 + figma-bridge 技能
+```
+
+一个工具覆盖全流程——先看概览，再按需取用：
+
+```jsonc
+figma({ mode: "screens", ref: "https://www.figma.com/design/<fileKey>/<name>" })   // 页面+画板概览，输出很小
+figma({ mode: "node",    ref: "<fileKey>", nodeId: "1:4", depth: 1, fields: "layout+text" })
+figma({ mode: "images",  ref: "<fileKey>", nodeIds: ["1:4"], outDir: "assets" })
 ```
 
 同一个包仍然是普通 CLI：`npm i -g figma-bridge-cli` 供任何 shell-only agent 使用，不依赖 pi。在 pi 里扩展只暴露

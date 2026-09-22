@@ -1,11 +1,13 @@
 # figma-bridge
 
-**Figma design data CLI for AI agents — no MCP, no desktop app.**
+**Figma design data for AI agents: a CLI for shell-only agents and a [pi package](https://pi.dev/packages/figma-bridge-cli) (one compact tool) — no MCP, no desktop app.**
 
 English | [中文](./README.zh-CN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/figma-bridge-cli)](https://www.npmjs.com/package/figma-bridge-cli)
+[![pi-package](https://img.shields.io/badge/pi--package-listed-blue)](https://pi.dev/packages/figma-bridge-cli)
+[![GitHub release](https://img.shields.io/github/v/release/SuTang-vain/figma-bridge)](https://github.com/SuTang-vain/figma-bridge/releases)
 [![GitHub stars](https://img.shields.io/github/stars/SuTang-vain/figma-bridge?style=flat)](https://github.com/SuTang-vain/figma-bridge/stargazers)
 [![Node.js](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)](https://nodejs.org)
 
@@ -33,6 +35,10 @@ mkdir -p ~/.config/figma && chmod 700 ~/.config/figma
 printf 'YOUR_TOKEN' > ~/.config/figma/api-key && chmod 600 ~/.config/figma/api-key
 ```
 
+Requires Node 18+. The upstream `figma-developer-mcp` library declares `engines: >=20.20.0`; the code paths
+this project uses are tested on 18.20 in CI, so 18 works in practice — but if your package manager enforces
+engines strictly, or you want the upstream package's own floor, use Node 20.20 or newer.
+
 From source:
 
 ```bash
@@ -45,6 +51,14 @@ mkdir -p ~/.local/bin && ln -s ~/figma-bridge/bin/figma-bridge.js ~/.local/bin/f
 
 ```bash
 pi install npm:figma-bridge-cli     # adds one `figma` tool + the figma-bridge skill
+```
+
+One tool covers the whole workflow — outline first, then only what you need:
+
+```jsonc
+figma({ mode: "screens", ref: "https://www.figma.com/design/<fileKey>/<name>" })   // pages + frames, tiny output
+figma({ mode: "node",    ref: "<fileKey>", nodeId: "1:4", depth: 1, fields: "layout+text" })
+figma({ mode: "images",  ref: "<fileKey>", nodeIds: ["1:4"], outDir: "assets" })
 ```
 
 The same package stays a plain CLI — `npm i -g figma-bridge-cli` works with any shell-only agent, no pi
