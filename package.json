@@ -2,6 +2,7 @@
   "name": "figma-bridge-cli",
   "version": "0.3.1",
   "description": "Figma design data for AI agents: a CLI for shell-only agents and a pi package (one compact tool) — no MCP, no desktop app",
+  "readmeFilename": "README.md",
   "keywords": [
     "figma",
     "cli",
@@ -49,6 +50,7 @@
     "src",
     "extensions",
     "skills",
+    "docs/README.zh-CN.md",
     "BENCHMARKS.md",
     "assets/demo.gif"
   ],

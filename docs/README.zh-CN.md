@@ -2,9 +2,9 @@
 
 **面向 AI agent 的 Figma 设计数据：既是给 shell-only agent 的 CLI，也是 [pi 包](https://pi.dev/packages/figma-bridge-cli)（一个紧凑工具）——无需 MCP，无需桌面客户端。**
 
-[English](./README.md) | 中文
+[English](../README.md) | 中文
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 [![npm](https://img.shields.io/npm/v/figma-bridge-cli)](https://www.npmjs.com/package/figma-bridge-cli)
 [![pi-package](https://img.shields.io/badge/pi--package-listed-blue)](https://pi.dev/packages/figma-bridge-cli)
 [![GitHub release](https://img.shields.io/github/v/release/SuTang-vain/figma-bridge)](https://github.com/SuTang-vain/figma-bridge/releases)
@@ -16,7 +16,7 @@
 为只能用 shell 的 agent（pi、自定义脚本、CI，以及任何不支持 MCP 的 agent）而生，
 也适合被 MCP 的 token 膨胀、套餐限流、桌面端依赖困扰的开发者。
 
-![figma-bridge 演示：screens → node → 批量模式](./assets/demo.gif)
+![figma-bridge 演示：screens → node → 批量模式](../assets/demo.gif)
 
 ## 为什么不用 MCP？
 
@@ -73,7 +73,7 @@ figma({ mode: "images",  ref: "<fileKey>", nodeIds: ["1:4"], outDir: "assets" })
 紧凑输出、缓存、超长输出落盘、图片导出**并非**本项目独有——它们也有，桌面插件路线还额外支持带 dry-run 的写入。
 
 本项目补的是：**面向所有 agent**（CLI 不限于 pi）、把使用指引以**技能**形式随包发布，以及**公开可复现**的性能数据
-（[BENCHMARKS.md](./BENCHMARKS.md) + `./bench.sh`，含每轮原始输出）。
+（[BENCHMARKS.md](../BENCHMARKS.md) + `./bench.sh`，含每轮原始输出）。
 
 ## 实际效果
 
@@ -93,7 +93,7 @@ $ figma-bridge node ymWuCHHNU22zse8nVTVmNN 1:4 --depth 1 --fields layout+text
 
 同一节点、同一深度：figma-bridge 约 1.8 KB，MCP 桥接约 3 KB——而 `screens`
 大纲相比整文件拉取几乎零成本。多轮实测数据（延迟、输出体积、缓存行为、批量模式）
-及复现方法见 [BENCHMARKS.md](./BENCHMARKS.md)。
+及复现方法见 [BENCHMARKS.md](../BENCHMARKS.md)。
 
 ## 用法
 
@@ -114,7 +114,7 @@ EOF
   `figma-bridge node 'https://www.figma.com/design/<key>/Name?node-id=1-4'`
 - `--fields` 预设：`all`（默认）、`layout+text`、`content`、`visuals`、`layout`
 - 响应按文件缓存，`lastModified` 未变时复用
-- 面向 agent 的文档：[skills/figma-bridge/SKILL.md](./skills/figma-bridge/SKILL.md)
+- 面向 agent 的文档：[skills/figma-bridge/SKILL.md](../skills/figma-bridge/SKILL.md)
 
 ## 工作原理
 
@@ -134,4 +134,4 @@ agent → figma-bridge（CLI）→ Figma REST API → Framelink 简化管线（�
 
 ## 许可证
 
-[MIT](./LICENSE)
+[MIT](../LICENSE)

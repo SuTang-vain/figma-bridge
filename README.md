@@ -2,7 +2,7 @@
 
 **Figma design data for AI agents: a CLI for shell-only agents and a [pi package](https://pi.dev/packages/figma-bridge-cli) (one compact tool) — no MCP, no desktop app.**
 
-English | [中文](./README.zh-CN.md)
+English | [中文](./docs/README.zh-CN.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/figma-bridge-cli)](https://www.npmjs.com/package/figma-bridge-cli)

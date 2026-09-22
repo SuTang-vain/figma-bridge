@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -84,12 +84,14 @@ test('the packed tarball contains skills/ and extensions/', () => {
 });
 
 test('README relative links resolve to files that exist', () => {
-  for (const doc of ['README.md', 'README.zh-CN.md']) {
+  // docs/README.zh-CN.md lives in a subdirectory, so links resolve against its own directory.
+  for (const doc of ['README.md', 'docs/README.zh-CN.md']) {
     const text = readFileSync(join(ROOT, doc), 'utf8');
+    const base = dirname(join(ROOT, doc));
     for (const target of text.matchAll(/!?\[[^\]]*\]\(([^)\s]+)\)/g)) {
       const href = target[1];
       if (/^(https?:|mailto:|#)/.test(href)) continue;
-      const path = resolve(ROOT, href.replace(/^\.\//, ''));
+      const path = resolve(base, href.replace(/^\.\//, ''));
       assert.ok(existsSync(path), `${doc} links to a missing file: ${href}`);
     }
   }
