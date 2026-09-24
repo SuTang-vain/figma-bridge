@@ -58,11 +58,13 @@ One tool covers the whole workflow — outline first, then only what you need:
 ```jsonc
 figma({ mode: "screens", ref: "https://www.figma.com/design/<fileKey>/<name>" })   // pages + frames, tiny output
 figma({ mode: "node",    ref: "<fileKey>", nodeId: "1:4", depth: 1, fields: "layout+text" })
+figma({ mode: "changed", ref: "<fileKey>" })                                       // diff vs your last call
+figma({ mode: "variables", ref: "<fileKey>" })                                     // design tokens as CSS vars (Enterprise)
 figma({ mode: "images",  ref: "<fileKey>", nodeIds: ["1:4"], outDir: "assets" })
 ```
 
 The same package stays a plain CLI — `npm i -g figma-bridge-cli` works with any shell-only agent, no pi
-required. Inside pi the extension exposes **one** tool with a `mode` enum (`screens | node | images`) rather
+required. Inside pi the extension exposes **one** tool with a `mode` enum (`screens | node | changed | images | variables`) rather
 than a tool per operation, because tool schemas are a context tax that is paid on every turn.
 
 The `figma-developer-mcp` dependency is used strictly as a library (Framelink's simplification pipeline);
@@ -79,6 +81,27 @@ supports writes with a dry run.
 What this project adds: it is **agent-agnostic** (the CLI works with any harness, not only pi), it ships its
 agent guidance as a **skill** rather than only tool schemas, and its performance claims are **published and
 reproducible** ([BENCHMARKS.md](./BENCHMARKS.md) + `./bench.sh`, including the raw per-round output).
+
+## Cost, privacy and boundaries
+
+- **Zero telemetry.** The only network traffic is the Figma API traffic you asked for — no usage analytics,
+  no error reporting; design-file identifiers never leave your machine through this tool.
+- **Predictable cost.** No usage-based meter. Figma documents its MCP server as free "during the beta period"
+  and [eventually a usage-based paid feature](https://help.figma.com/hc/en-us/articles/32132100833559); figma-bridge
+  spends only your plan's REST rate limits, and its cache stretches them further.
+- **Headless by design.** Runs anywhere Node 18+ does — CI, servers, containers — with no desktop app.
+- **Token discipline.** Context is the scarce resource, so the bundled skill enforces a coarse→fine workflow;
+  Figma's own docs cite a single `get_design_context` response of
+  [~351k tokens](https://developers.figma.com/docs/figma-mcp-server/mcp-clients-issue) blowing past client
+  limits — the failure mode this tool exists to avoid.
+
+Out of scope, on purpose:
+
+- **Writing to Figma files** — the REST API is read-only; this changes only if Figma ships write endpoints.
+- **Code Connect / official codegen / FigJam / motion data** — Dev Mode capabilities with no public REST
+  equivalent; Figma's own MCP is the right tool for those.
+- **Variables without an Enterprise plan** — `/variables/local` is gated by Figma; the mode fails with an
+  explicit explanation instead of a cryptic error.
 
 ## See it work
 
@@ -106,7 +129,9 @@ cache behavior, batch mode) with methodology and reproduction steps.
 ```bash
 # Progressive: list screens first (tiny output), then fetch only what you need
 figma-bridge screens <fileKey>
+figma-bridge changed <fileKey>          # what moved since the last `changed` call (per-depth snapshots)
 figma-bridge node <fileKey> <nodeId> --depth 1 --fields layout+text
+figma-bridge variables <fileKey>        # design tokens as CSS custom properties (Enterprise plans)
 figma-bridge images <fileKey> <id1,id2> -o ./assets --format png --scale 2
 
 # Batch mode for multi-step work (helpers preloaded, top-level await)
