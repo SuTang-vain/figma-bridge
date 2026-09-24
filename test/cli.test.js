@@ -126,3 +126,20 @@ test('a cold cache with the network down still fails', () => {
   assert.equal(status, 1);
   assert.ok(stderr.includes('ENETUNREACH'), stderr);
 });
+
+test('changed saves a baseline, then reports no changes on a second run', () => {
+  const cache = tmp('fb-cli-cache-');
+  const first = run(['changed', 'FixtureKey1'], { cache });
+  assert.equal(first.status, 0, first.stderr);
+  assert.match(first.stdout, /baseline saved for FixtureKey1 \(depth 2/, first.stdout);
+
+  const second = run(['changed', 'FixtureKey1'], { cache });
+  assert.equal(second.status, 0, second.stderr);
+  assert.match(second.stdout, /no changes/, second.stdout);
+});
+
+test('changed rejects an out-of-range depth before touching the network', () => {
+  const { status, stderr } = run(['changed', 'FixtureKey1', '--depth', '9']);
+  assert.equal(status, 1);
+  assert.ok(stderr.includes('--depth must be an integer between 1 and 3'), stderr);
+});

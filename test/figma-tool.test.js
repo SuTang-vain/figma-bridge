@@ -4,11 +4,12 @@ import assert from 'node:assert/strict';
 import { createFigmaTool, MODES, FIELD_PRESETS, IMAGE_FORMATS } from '../src/figma-tool.js';
 
 function harness(overrides = {}) {
-  const calls = { screens: [], node: [], images: [] };
+  const calls = { screens: [], node: [], images: [], changed: [] };
   const tool = createFigmaTool({
     getScreens: async (...args) => { calls.screens.push(args); return overrides.screens || 'SCREENS TEXT'; },
     getNode: async (...args) => { calls.node.push(args); return overrides.node || 'NODE TEXT'; },
     getImages: async (...args) => { calls.images.push(args); return overrides.images || ['/tmp/proj/figma-assets/1-4.png']; },
+    getChanged: async (...args) => { calls.changed.push(args); return overrides.changed || 'CHANGED TEXT'; },
     truncate: overrides.truncate || ((text) => ({ text, truncation: { truncated: false }, fullOutputPath: null })),
   });
   return { tool, calls };
@@ -84,4 +85,11 @@ test('helper failures propagate (pi marks the tool call as errored)', async () =
     truncate: (t) => ({ text: t, truncation: null, fullOutputPath: null }),
   });
   await assert.rejects(() => tool.execute('id', { mode: 'screens', ref: '..' }, null, null, {}), /invalid fileKey/);
+});
+
+test('mode=changed forwards ref and depth through the same truncation path', async () => {
+  const { tool, calls } = harness();
+  const res = await tool.execute('id', { mode: 'changed', ref: 'Key9', depth: 3 }, null, null, { cwd: '/tmp/proj' });
+  assert.equal(res.content[0].text, 'CHANGED TEXT');
+  assert.deepEqual(calls.changed, [['Key9', { depth: 3 }]]);
 });

@@ -7,9 +7,17 @@ import {
   visualsOnly,
   layoutOnly,
 } from 'figma-developer-mcp';
-import { fetchFileTree, fetchNode, downloadImages } from './api.js';
+import { fetchFileTree, fetchNode, downloadImages, fileCacheDir } from './api.js';
 import { formatDesign, formatScreens, cacheNote } from './format.js';
 import { parseFigmaUrl, assertNodeId, assertDepth } from './url.js';
+import {
+  collectNodes,
+  loadSnapshot,
+  saveSnapshot,
+  diffSnapshots,
+  formatChanged,
+  formatBaseline,
+} from './changed.js';
 
 const FIELD_PRESETS = {
   all: allExtractors,
@@ -47,6 +55,23 @@ export async function getNode(ref, nodeId, { depth = 2, fields = 'all' } = {}) {
   const { data, cached, unverified, lastModified } = await fetchNode(parsed.fileKey, id, assertDepth(depth));
   const design = await simplifyRawFigmaObject(data, extractors, { maxDepth: depth });
   return formatDesign(design, { meta: { lastModified, cached, unverified } });
+}
+
+// Incremental step: what changed in this file since the last `changed` call.
+// One depth-N fetch, then a local snapshot diff — only the delta reaches the agent.
+export async function getChanged(ref, { depth = 2 } = {}) {
+  const { fileKey } = parseFigmaUrl(ref);
+  const d = assertDepth(depth);
+  const { data, lastModified } = await fetchFileTree(fileKey, d);
+  const nodes = collectNodes(data);
+  const dir = fileCacheDir(fileKey);
+  const kind = `tree-d${d}`;
+  const prev = loadSnapshot(dir, kind);
+  const meta = { lastModified, fetchedAt: new Date().toISOString(), depth: d, nodeCount: nodes.size };
+  saveSnapshot(dir, kind, { meta, nodes: Object.fromEntries(nodes) });
+  if (!prev) return formatBaseline({ fileKey, depth: d, meta });
+  const diff = diffSnapshots(new Map(Object.entries(prev.nodes)), nodes);
+  return formatChanged({ fileKey, depth: d, diff, prevMeta: prev.meta, meta });
 }
 
 // Download rendered images of nodes to a directory.

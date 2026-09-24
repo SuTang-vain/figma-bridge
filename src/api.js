@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
+import { assertFileKey } from './url.js';
 
 export function getToken() {
   if (process.env.FIGMA_API_KEY) return process.env.FIGMA_API_KEY;
@@ -39,6 +40,12 @@ function cacheDir(fileKey) {
   }
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
+}
+
+// Exposed for snapshot storage (changed mode): the containment-checked, owner-private
+// cache directory of one file.
+export function fileCacheDir(fileKey) {
+  return cacheDir(assertFileKey(fileKey));
 }
 
 // Fetch raw API JSON, reusing the cached copy when the file's lastModified is unchanged.

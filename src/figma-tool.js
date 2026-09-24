@@ -12,19 +12,20 @@ import { IMAGE_FORMATS } from './api.js';
 import { truncateForTool } from './truncate.js';
 import { assertDepth } from './url.js';
 
-export const MODES = ['screens', 'node', 'images'];
+export const MODES = ['screens', 'node', 'changed', 'images'];
 export const FIELD_PRESETS = ['all', 'layout+text', 'content', 'visuals', 'layout'];
 export { IMAGE_FORMATS };
 
 export const DESCRIPTION = [
   'Read Figma design data without MCP or the Figma desktop app.',
   'mode=screens lists pages and frames (smallest output), mode=node returns one node subtree',
-  'as compact text, mode=images renders and downloads node images.',
+  'as compact text, mode=changed diffs the file against your last call (added/removed/modified),',
+  'mode=images renders and downloads node images.',
   'Uses the Figma REST API with FIGMA_API_KEY or ~/.config/figma/api-key; responses are cached',
   'per file until the file changes. Output is truncated at 50KB/2000 lines.',
 ].join(' ');
 
-export function createFigmaTool({ getScreens, getNode, getImages, truncate = truncateForTool }) {
+export function createFigmaTool({ getScreens, getNode, getImages, getChanged, truncate = truncateForTool }) {
   return {
     name: 'figma',
     label: 'Figma',
@@ -32,11 +33,12 @@ export function createFigmaTool({ getScreens, getNode, getImages, truncate = tru
     promptSnippet: 'Read Figma designs: list screens, fetch a node subtree, or download rendered images',
     promptGuidelines: [
       'Use figma with mode=screens first to see a file\'s pages and frames cheaply, then mode=node for the specific node you need.',
+      'Use figma with mode=changed when you have looked at this file before — the diff is far cheaper than re-reading it.',
       'Use figma with mode=images only for nodes you will actually use, and pass outDir to keep assets inside the project.',
     ],
     parameters: Type.Object({
       mode: Type.Union(MODES.map((mode) => Type.Literal(mode)), {
-        description: 'screens = page/frame outline; node = one simplified subtree; images = download rendered images',
+        description: 'screens = page/frame outline; node = one simplified subtree; changed = diff against your last call; images = download rendered images',
       }),
       ref: Type.String({ description: 'Figma file key or a full Figma URL' }),
       nodeId: Type.Optional(Type.String({ description: 'Node id like "1:4"; defaults to the URL\'s node-id' })),
@@ -68,6 +70,15 @@ export function createFigmaTool({ getScreens, getNode, getImages, truncate = tru
           ? saved.map((file) => `saved ${file}`).join('\n')
           : 'no images returned for those node ids';
         return { content: [{ type: 'text', text }], details: { mode: params.mode, ref: params.ref, saved } };
+      }
+
+      if (params.mode === 'changed') {
+        const text = await getChanged(params.ref, { depth });
+        const t = truncate(text);
+        return {
+          content: [{ type: 'text', text: t.text }],
+          details: { mode: params.mode, ref: params.ref, ...(t.fullOutputPath ? { fullOutputPath: t.fullOutputPath } : {}) },
+        };
       }
 
       const figure = params.mode === 'screens'
