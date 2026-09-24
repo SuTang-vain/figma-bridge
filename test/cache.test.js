@@ -87,3 +87,17 @@ test('cache paths can never escape the cache root', async (t) => {
   await assert.rejects(() => fetchCached('/tmp/evil', 'x', '/files/x'), /outside/);
   assert.equal(root, process.env.FIGMA_BRIDGE_CACHE_DIR);
 });
+
+test('an API error surfaces status and body slice, never the token', async (t) => {
+  harness(t); // sets FIGMA_API_KEY = 'test-token'
+  globalThis.fetch = async () => new Response(JSON.stringify({ err: 'Invalid token' }), { status: 403 });
+  await assert.rejects(
+    () => fetchCached('KeyE', 'file-depth2', '/files/KeyE?depth=2'),
+    (e) => {
+      assert.match(e.message, /Figma API 403/);
+      assert.ok(e.message.includes('Invalid token'), 'the response body should be quoted (200-char slice)');
+      assert.ok(!e.message.includes('test-token'), 'the API token must never appear in the error message');
+      return true;
+    },
+  );
+});

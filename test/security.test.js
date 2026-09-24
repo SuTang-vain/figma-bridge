@@ -18,6 +18,8 @@ const json = (obj) => new Response(JSON.stringify(obj), {
   headers: { 'content-type': 'application/json' },
 });
 
+const WIN32_SKIP = process.platform === 'win32' ? 'POSIX-only: symlinks and mode bits' : false;
+
 test('image URLs: https figma/aws hosts pass; http, lookalikes and foreign hosts refuse', () => {
   for (const ok of [
     'https://api.figma.com/x',
@@ -44,7 +46,7 @@ test('image options: format must be known, scale clamped to 0.01-4', () => {
   assert.throws(() => assertImageOptions({ format: 'png', scale: Number.NaN }), /--scale/);
 });
 
-test('outDir symlink escape: lexical-inside-cwd but real-outside is refused; absolute paths stay allowed', (t) => {
+test('outDir symlink escape: lexical-inside-cwd but real-outside is refused; absolute paths stay allowed', { skip: WIN32_SKIP }, (t) => {
   const root = mkdtempSync(join(tmpdir(), 'fb-sec-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const cwd = join(root, 'proj');
@@ -79,7 +81,7 @@ function netHarness(t) {
   return root;
 }
 
-test('cached raw JSON and downloaded images are written 0o600 (dirs 0o700)', async (t) => {
+test('cached raw JSON and downloaded images are written 0o600 (dirs 0o700)', { skip: WIN32_SKIP }, async (t) => {
   const root = netHarness(t);
   const figmaHostPng = 'https://s3-alpha-sig.figma.com/img/x.png';
   globalThis.fetch = async (input) => {
@@ -120,7 +122,7 @@ test('downloadImages refuses a malicious URL from a tampered API response', asyn
   );
 });
 
-test('spill files are written 0o600', () => {
+test('spill files are written 0o600', { skip: WIN32_SKIP }, () => {
   const file = spillToTempFile('x'.repeat(100));
   assert.equal(statSync(file).mode & 0o777, 0o600);
 });
@@ -131,4 +133,18 @@ test('depth is clamped to integers 1-3', () => {
   for (const bad of [0, -1, 4, 2.5, 'x', true, undefined, null]) {
     assert.throws(() => assertDepth(bad), /--depth/, String(bad));
   }
+});
+
+test('downloadImages surfaces the images endpoint err field instead of writing nothing', async (t) => {
+  const root = netHarness(t);
+  globalThis.fetch = async (input) => {
+    if (String(input).includes('/v1/images/')) {
+      return json({ err: 'Some nodes failed to render', images: null });
+    }
+    throw new Error('no other request is expected');
+  };
+  await assert.rejects(
+    () => downloadImages('Key1', ['9:9'], join(root, 'out'), { cwd: root }),
+    /images endpoint.*Some nodes failed to render/,
+  );
 });

@@ -24,12 +24,13 @@ after(() => {
   for (const dir of temps) rmSync(dir, { recursive: true, force: true });
 });
 
-function run(args, { workdir, cache, mode = 'ok' } = {}) {
+function run(args, { workdir, cache, mode = 'ok', input } = {}) {
   const cwd = workdir || tmp('fb-cli-cwd-');
   const cacheDir = cache || tmp('fb-cli-cache-');
   const proc = spawnSync(process.execPath, ['--import', STUB, BIN, ...args], {
     cwd,
     encoding: 'utf8',
+    input,
     env: {
       ...process.env,
       FIGMA_API_KEY: 'stub-token',
@@ -142,4 +143,17 @@ test('changed rejects an out-of-range depth before touching the network', () => 
   const { status, stderr } = run(['changed', 'FixtureKey1', '--depth', '9']);
   assert.equal(status, 1);
   assert.ok(stderr.includes('--depth must be an integer between 1 and 3'), stderr);
+});
+
+test('nodejs batch mode runs a stdin script with helpers preloaded', () => {
+  const script = "cliLog(typeof getScreens, typeof getNode, typeof getImages); cliLog('math', 2 + 2)";
+  const { status, stdout, stderr } = run(['nodejs'], { input: script });
+  assert.equal(status, 0, stderr);
+  assert.ok(stdout.includes('function function function'), 'helpers must be preloaded', stdout);
+  assert.ok(stdout.includes('math 4'), 'cliLog must stringify non-strings', stdout);
+});
+
+test('nodejs propagates the script exit code', () => {
+  const { status } = run(['nodejs'], { input: 'process.exit(3)' });
+  assert.equal(status, 3);
 });
