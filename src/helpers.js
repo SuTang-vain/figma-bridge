@@ -9,7 +9,7 @@ import {
 } from 'figma-developer-mcp';
 import { fetchFileTree, fetchNode, downloadImages } from './api.js';
 import { formatDesign, formatScreens, cacheNote } from './format.js';
-import { parseFigmaUrl, assertNodeId } from './url.js';
+import { parseFigmaUrl, assertNodeId, assertDepth } from './url.js';
 
 const FIELD_PRESETS = {
   all: allExtractors,
@@ -31,7 +31,7 @@ function resolveExtractors(fields = 'all') {
 // `ref` accepts a fileKey or a full Figma URL.
 export async function getScreens(ref, { depth = 2 } = {}) {
   const { fileKey } = parseFigmaUrl(ref);
-  const { data, cached, unverified } = await fetchFileTree(fileKey, depth);
+  const { data, cached, unverified } = await fetchFileTree(fileKey, assertDepth(depth));
   const note = cacheNote({ cached, unverified });
   return formatScreens(data) + (note ? `\n(${note})` : '');
 }
@@ -44,7 +44,7 @@ export async function getNode(ref, nodeId, { depth = 2, fields = 'all' } = {}) {
   if (!id) throw new Error('nodeId required (pass one or use a URL containing node-id)');
   // Resolve extractors before touching the network: an unknown --fields must fail fast.
   const extractors = resolveExtractors(fields);
-  const { data, cached, unverified, lastModified } = await fetchNode(parsed.fileKey, id, depth);
+  const { data, cached, unverified, lastModified } = await fetchNode(parsed.fileKey, id, assertDepth(depth));
   const design = await simplifyRawFigmaObject(data, extractors, { maxDepth: depth });
   return formatDesign(design, { meta: { lastModified, cached, unverified } });
 }

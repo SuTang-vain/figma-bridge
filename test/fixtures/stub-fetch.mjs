@@ -31,9 +31,9 @@ globalThis.fetch = async (input) => {
   if (MODE === 'down') throw new Error('simulated ENETUNREACH');
   if (url.includes('/nodes?')) return json(FIXTURE);
   if (url.includes('/v1/images/')) {
-    return json({ err: null, images: { '1:4': 'https://stub.invalid/1-4.png' } });
+    return json({ err: null, images: { '1:4': 'https://s3-alpha-sig.figma.com/stub/1-4.png' } });
   }
-  if (url.startsWith('https://stub.invalid/')) {
+  if (url.startsWith('https://s3-alpha-sig.figma.com/')) {
     return new Response(Buffer.from('89504e470d0a1a0a', 'hex'), { status: 200 });
   }
   if (url.includes('/v1/files/')) return json(FILE_TREE);

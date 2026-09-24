@@ -19,9 +19,9 @@ export function formatSize(bytes) {
 }
 
 export function spillToTempFile(content, { prefix = 'figma-output' } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'figma-bridge-'));
+  const dir = mkdtempSync(join(tmpdir(), 'figma-bridge-')); // mkdtemp dirs are 0o700 by definition
   const file = join(dir, `${prefix}.txt`);
-  writeFileSync(file, content);
+  writeFileSync(file, content, { mode: 0o600 });
   return file;
 }
 

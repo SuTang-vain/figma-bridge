@@ -8,11 +8,13 @@
 // so this module stays unit-testable and the package still works as a plain CLI.
 import { resolve } from 'node:path';
 import { Type } from 'typebox';
+import { IMAGE_FORMATS } from './api.js';
 import { truncateForTool } from './truncate.js';
+import { assertDepth } from './url.js';
 
 export const MODES = ['screens', 'node', 'images'];
 export const FIELD_PRESETS = ['all', 'layout+text', 'content', 'visuals', 'layout'];
-export const IMAGE_FORMATS = ['png', 'svg', 'jpg', 'pdf'];
+export { IMAGE_FORMATS };
 
 export const DESCRIPTION = [
   'Read Figma design data without MCP or the Figma desktop app.',
@@ -54,7 +56,7 @@ export function createFigmaTool({ getScreens, getNode, getImages, truncate = tru
 
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const cwd = ctx?.cwd || process.cwd();
-      const depth = params.depth ?? 2;
+      const depth = params.depth === undefined ? 2 : assertDepth(params.depth);
 
       if (params.mode === 'images') {
         const outDir = resolve(cwd, params.outDir || './figma-assets');

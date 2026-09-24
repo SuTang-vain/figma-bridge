@@ -50,13 +50,13 @@ async function main() {
   switch (cmd) {
     case 'screens': {
       if (!pos[0]) throw new Error('usage: figma-bridge screens <fileKey|url>');
-      console.log(await getScreens(pos[0], { depth: Number(flags.depth) || 2 }));
+      console.log(await getScreens(pos[0], { depth: flags.depth === true ? undefined : flags.depth }));
       break;
     }
     case 'node': {
       if (!pos[0]) throw new Error('usage: figma-bridge node <fileKey|url> [nodeId]');
       console.log(await getNode(pos[0], pos[1], {
-        depth: flags.depth !== undefined ? Number(flags.depth) : 2,
+        depth: flags.depth === true ? undefined : flags.depth,
         fields: flags.fields || 'all',
       }));
       break;
@@ -65,7 +65,7 @@ async function main() {
       if (!pos[0]) throw new Error('usage: figma-bridge images <fileKey|url> [id1,id2]');
       const saved = await getImages(pos[0], pos[1], flags.o || './figma-assets', {
         format: flags.format || 'png',
-        scale: Number(flags.scale) || 2,
+        scale: flags.scale === undefined ? 2 : Number(flags.scale),
       });
       console.log(saved.join('\n'));
       break;

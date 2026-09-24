@@ -1,6 +1,6 @@
 // api.js — Figma REST API access with token resolution and lastModified-based caching.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 
@@ -37,7 +37,7 @@ function cacheDir(fileKey) {
   if (!dir.startsWith(root + sep)) {
     throw new Error(`refusing to use a cache path outside ${root}: ${dir}`);
   }
-  mkdirSync(dir, { recursive: true });
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
 }
 
@@ -72,8 +72,9 @@ export async function fetchCached(fileKey, kind, path) {
   }
   const data = await apiFetch(path);
   if (lastModified) {
-    writeFileSync(rawPath, JSON.stringify(data));
-    writeFileSync(metaPath, lastModified);
+    // Design data is written readable only by the owner (0o600), like the API key itself.
+    writeFileSync(rawPath, JSON.stringify(data), { mode: 0o600 });
+    writeFileSync(metaPath, lastModified, { mode: 0o600 });
   }
   return { data, cached: false, lastModified };
 }
@@ -94,10 +95,61 @@ export async function fetchNode(fileKey, nodeId, depth = 2) {
   );
 }
 
+// Image download URLs come from the Figma API response. Validate before fetching so a
+// tampered response cannot turn the export feature into an arbitrary-file downloader:
+// only https, and only hosts Figma is known to serve renders from. The (^|\.) anchor
+// keeps lookalike hosts such as 'evil-figma.com' or 'figma.com.evil.com' out.
+const IMAGE_HOST = /(^|\.)((s3-alpha-sig\.)?figma\.com|figmausercontent\.com|amazonaws\.com)$/i;
+
+export const IMAGE_FORMATS = ['png', 'svg', 'jpg', 'pdf', 'webp'];
+
+export function assertImageOptions({ format = 'png', scale = 2 } = {}) {
+  if (!IMAGE_FORMATS.includes(format)) {
+    throw new Error(`unknown --format '${format}', valid: ${IMAGE_FORMATS.join(', ')}`);
+  }
+  if (!(Number.isFinite(scale) && scale >= 0.01 && scale <= 4)) {
+    throw new Error(`--scale must be a number between 0.01 and 4 (got ${scale})`);
+  }
+}
+
+export function assertImageUrl(url) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    throw new Error(`refusing image URL (not a valid URL): ${String(url).slice(0, 80)}`);
+  }
+  if (u.protocol !== 'https:') {
+    throw new Error(`refusing image URL with protocol '${u.protocol}' (https only): ${u.hostname}`);
+  }
+  if (!IMAGE_HOST.test(u.hostname)) {
+    throw new Error(`refusing image URL host '${u.hostname}' (expected a figma.com / amazonaws.com host)`);
+  }
+  return u;
+}
+
+// A relative outDir that lexically sits inside the cwd but resolves (through symlinks)
+// outside it is refused: an agent could otherwise be tricked into writing outside the
+// project. An absolute outDir is an explicit user choice and stays allowed.
+export function assertNoSymlinkEscape(outDir, cwd = process.cwd()) {
+  const base = resolve(cwd);
+  const lexical = resolve(cwd, outDir);
+  if (lexical !== base && !lexical.startsWith(base + sep)) return;
+  const real = realpathSync(lexical);
+  const realBase = realpathSync(base);
+  if (real !== realBase && !real.startsWith(realBase + sep)) {
+    throw new Error(
+      `outDir '${outDir}' is a symlink that escapes the current directory (resolves to ${real}); `
+      + 'pass an absolute path to allow writing there explicitly'
+    );
+  }
+}
+
 // Render nodes to image URLs, then download to outDir. Returns saved file paths.
 // The directory is only created once there is something to write, so a failed
 // images call never leaves an empty output directory behind.
-export async function downloadImages(fileKey, nodeIds, outDir, { format = 'png', scale = 2 } = {}) {
+export async function downloadImages(fileKey, nodeIds, outDir, { format = 'png', scale = 2, cwd } = {}) {
+  assertImageOptions({ format, scale });
   const ids = nodeIds.join(',');
   const { images, err } = await apiFetch(
     `/images/${fileKey}?ids=${encodeURIComponent(ids)}&format=${format}&scale=${scale}`
@@ -105,14 +157,16 @@ export async function downloadImages(fileKey, nodeIds, outDir, { format = 'png',
   if (err) throw new Error('images endpoint: ' + JSON.stringify(err));
   const entries = Object.entries(images || {}).filter(([, url]) => url);
   if (!entries.length) return [];
-  mkdirSync(outDir, { recursive: true });
+  mkdirSync(outDir, { recursive: true, mode: 0o700 });
+  assertNoSymlinkEscape(outDir, cwd);
   const saved = [];
   for (const [id, url] of entries) {
+    assertImageUrl(url);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`download ${id}: HTTP ${res.status}`);
     // Ids are validated upstream; sanitize anyway so they can never escape outDir.
     const file = join(outDir, `${id.replace(/[^A-Za-z0-9._-]/g, '-')}.${format}`);
-    writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+    writeFileSync(file, Buffer.from(await res.arrayBuffer()), { mode: 0o600 });
     saved.push(file);
   }
   return saved;

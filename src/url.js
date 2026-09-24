@@ -25,6 +25,19 @@ export function assertNodeId(nodeId) {
   return v;
 }
 
+// Tree depth is clamped hard instead of passed through: a negative or huge depth would
+// either waste an API call on a guaranteed 400 or fetch an unnecessarily large tree.
+export function assertDepth(depth) {
+  if (typeof depth === 'boolean') {
+    throw new Error('--depth needs a value (an integer between 1 and 3)');
+  }
+  const d = Number(depth);
+  if (!Number.isInteger(d) || d < 1 || d > 3) {
+    throw new Error(`--depth must be an integer between 1 and 3 (got ${JSON.stringify(depth)})`);
+  }
+  return d;
+}
+
 export function parseFigmaUrl(input) {
   if (typeof input !== 'string' || !input.trim()) throw new Error('fileKey required');
   const raw = input.trim();
