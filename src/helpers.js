@@ -85,7 +85,7 @@ export async function getVariables(ref, { mode } = {}) {
   } catch (e) {
     if (/\b403\b/.test(e.message)) {
       throw new Error(
-        `variables are only available through the Figma REST API on an Enterprise plan `
+        `variables are gated by Figma — an Enterprise plan, or an OAuth token carrying the variables scope `
         + `(Figma API 403 for ${fileKey}). Raw error: ${e.message}`,
       );
     }

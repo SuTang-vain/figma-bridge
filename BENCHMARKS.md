@@ -94,6 +94,35 @@ and text-heavy files where those patterns are common. `screens` no longer prints
 - `FIGMA_BRIDGE_CACHE_DIR` overrides the cache location. `bench.sh` uses it to work in a temp
   directory, so running the benchmark never reads or deletes `~/.cache/figma-bridge`.
 
+## Token cost vs the official Figma MCP route
+
+Measured 2026-09-24 on the same community file (it was unchanged since the latency run: the
+`screens`/`node` byte counts match the 2026-09-20 rows to within a few bytes). figma-bridge numbers
+are stdout bytes of the printed commands (token estimate ≈ bytes/4); the official-MCP row is **not
+our measurement** — it is the example published in Figma's own docs of a single
+`get_design_context` response exceeding a client's limit.
+
+| Route | Call | Output | Bytes | ≈ tokens |
+|---|---|---|---|---|
+| figma-bridge | `screens <key>` | pages + frames outline | 1,508 | ~380 |
+| figma-bridge | `node 1:4 --depth 1 --fields layout+text` | one screen subtree | 1,770 | ~440 |
+| figma-bridge | `node 1:4 --depth 2 --fields all` | same subtree, maximal detail | 3,324 | ~830 |
+| figma-bridge | `changed <key>` (follow-up reads) | only added/removed/modified ids | delta-sized | — |
+| Official Figma MCP | `get_design_context` (per Figma docs) | one node | — | **351,378** (documented) |
+
+Sources and limits:
+
+- Official figure: Figma developer docs, "Known issues with MCP clients" — a `get_design_context`
+  response of 351,378 tokens exceeding the client's maximum
+  (https://developers.figma.com/docs/figma-mcp-server/mcp-clients-issue, retrieved 2026-09-24).
+  File and node unspecified; it documents the failure mode's order of magnitude, not a controlled
+  A/B against this file.
+- The routes answer different feature sets (the official MCP also provides Code Connect, FigJam and
+  more). This comparison is scoped to "reading design context", where context size is the cost.
+- `changed` has no byte column because a delta only exists between two file versions; its cost is
+  proportional to the edit, not to the file.
+- Reproduce the figma-bridge column by running the printed commands against any file you can access.
+
 ## Reproduce
 
 ```bash
