@@ -4,12 +4,13 @@ import assert from 'node:assert/strict';
 import { createFigmaTool, MODES, FIELD_PRESETS, IMAGE_FORMATS } from '../src/figma-tool.js';
 
 function harness(overrides = {}) {
-  const calls = { screens: [], node: [], images: [], changed: [] };
+  const calls = { screens: [], node: [], images: [], changed: [], variables: [] };
   const tool = createFigmaTool({
     getScreens: async (...args) => { calls.screens.push(args); return overrides.screens || 'SCREENS TEXT'; },
     getNode: async (...args) => { calls.node.push(args); return overrides.node || 'NODE TEXT'; },
     getImages: async (...args) => { calls.images.push(args); return overrides.images || ['/tmp/proj/figma-assets/1-4.png']; },
     getChanged: async (...args) => { calls.changed.push(args); return overrides.changed || 'CHANGED TEXT'; },
+    getVariables: async (...args) => { calls.variables.push(args); return overrides.variables || 'VARIABLES TEXT'; },
     truncate: overrides.truncate || ((text) => ({ text, truncation: { truncated: false }, fullOutputPath: null })),
   });
   return { tool, calls };
@@ -92,4 +93,11 @@ test('mode=changed forwards ref and depth through the same truncation path', asy
   const res = await tool.execute('id', { mode: 'changed', ref: 'Key9', depth: 3 }, null, null, { cwd: '/tmp/proj' });
   assert.equal(res.content[0].text, 'CHANGED TEXT');
   assert.deepEqual(calls.changed, [['Key9', { depth: 3 }]]);
+});
+
+test('mode=variables forwards ref and the collection mode name', async () => {
+  const { tool, calls } = harness();
+  const res = await tool.execute('id', { mode: 'variables', ref: 'Key9', variableMode: 'Dark' }, null, null, { cwd: '/tmp/proj' });
+  assert.equal(res.content[0].text, 'VARIABLES TEXT');
+  assert.deepEqual(calls.variables, [['Key9', { mode: 'Dark' }]]);
 });

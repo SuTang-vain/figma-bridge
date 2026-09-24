@@ -6,7 +6,7 @@
 // pi core is imported dynamically and is optional on purpose: when pi is absent (tests, plain
 // CLI use) the tool still works with the conservative local truncator, so this file stays
 // importable without the pi runtime installed.
-import { getScreens, getNode, getImages, getChanged } from '../src/helpers.js';
+import { getScreens, getNode, getImages, getChanged, getVariables } from '../src/helpers.js';
 import { createFigmaTool } from '../src/figma-tool.js';
 import { createTruncator } from '../src/pi-truncate.js';
 
@@ -27,6 +27,7 @@ export default async function figmaExtension(pi, deps = {}) {
     getNode: deps.getNode || getNode,
     getImages: deps.getImages || getImages,
     getChanged: deps.getChanged || getChanged,
+    getVariables: deps.getVariables || getVariables,
     truncate,
   }));
 }

@@ -90,6 +90,11 @@ export async function fetchFileMeta(fileKey) {
   return apiFetch(`/files/${fileKey}?depth=1`);
 }
 
+// Local variables (design tokens). Plan-gated: Figma answers 403 without an Enterprise plan.
+export async function fetchVariables(fileKey) {
+  return apiFetch(`/files/${fileKey}/variables/local`);
+}
+
 export async function fetchFileTree(fileKey, depth = 2) {
   return fetchCached(fileKey, `file-depth${depth}`, `/files/${fileKey}?depth=${depth}`);
 }

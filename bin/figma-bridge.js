@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getScreens, getNode, getImages, getChanged } from '../src/helpers.js';
+import { getScreens, getNode, getImages, getChanged, getVariables } from '../src/helpers.js';
 import { parseFlags } from '../src/flags.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -21,6 +21,7 @@ const USAGE = `figma-bridge — Figma design data for shell-only agents (no MCP,
   figma-bridge screens <fileKey|url>                      list pages + top-level frames
   figma-bridge node <fileKey|url> [nodeId] [--depth 2] [--fields all|layout+text|content|visuals|layout]
   figma-bridge changed <fileKey|url> [--depth 2]         what changed since the last changed call
+  figma-bridge variables <fileKey|url> [--mode Light]    design tokens as CSS custom properties (Enterprise plans)
   figma-bridge images <fileKey|url> [id1,id2] [-o ./assets] [--format png|svg] [--scale 2]
   figma-bridge nodejs                                     run a JS script from stdin with helpers preloaded
   figma-bridge --help | -h        show this help
@@ -65,6 +66,11 @@ async function main() {
     case 'changed': {
       if (!pos[0]) throw new Error('usage: figma-bridge changed <fileKey|url>');
       console.log(await getChanged(pos[0], { depth: flags.depth === true ? undefined : flags.depth }));
+      break;
+    }
+    case 'variables': {
+      if (!pos[0]) throw new Error('usage: figma-bridge variables <fileKey|url> [--mode Light]');
+      console.log(await getVariables(pos[0], { mode: flags.mode === true ? undefined : flags.mode }));
       break;
     }
     case 'images': {

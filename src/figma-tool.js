@@ -12,7 +12,7 @@ import { IMAGE_FORMATS } from './api.js';
 import { truncateForTool } from './truncate.js';
 import { assertDepth } from './url.js';
 
-export const MODES = ['screens', 'node', 'changed', 'images'];
+export const MODES = ['screens', 'node', 'changed', 'images', 'variables'];
 export const FIELD_PRESETS = ['all', 'layout+text', 'content', 'visuals', 'layout'];
 export { IMAGE_FORMATS };
 
@@ -20,12 +20,13 @@ export const DESCRIPTION = [
   'Read Figma design data without MCP or the Figma desktop app.',
   'mode=screens lists pages and frames (smallest output), mode=node returns one node subtree',
   'as compact text, mode=changed diffs the file against your last call (added/removed/modified),',
-  'mode=images renders and downloads node images.',
+  'mode=images renders and downloads node images, mode=variables exports design tokens as CSS',
+  'custom properties (Enterprise plans only).',
   'Uses the Figma REST API with FIGMA_API_KEY or ~/.config/figma/api-key; responses are cached',
   'per file until the file changes. Output is truncated at 50KB/2000 lines.',
 ].join(' ');
 
-export function createFigmaTool({ getScreens, getNode, getImages, getChanged, truncate = truncateForTool }) {
+export function createFigmaTool({ getScreens, getNode, getImages, getChanged, getVariables, truncate = truncateForTool }) {
   return {
     name: 'figma',
     label: 'Figma',
@@ -38,7 +39,7 @@ export function createFigmaTool({ getScreens, getNode, getImages, getChanged, tr
     ],
     parameters: Type.Object({
       mode: Type.Union(MODES.map((mode) => Type.Literal(mode)), {
-        description: 'screens = page/frame outline; node = one simplified subtree; changed = diff against your last call; images = download rendered images',
+        description: 'screens = page/frame outline; node = one simplified subtree; changed = diff against your last call; images = download rendered images; variables = design tokens as CSS custom properties (Enterprise)',
       }),
       ref: Type.String({ description: 'Figma file key or a full Figma URL' }),
       nodeId: Type.Optional(Type.String({ description: 'Node id like "1:4"; defaults to the URL\'s node-id' })),
@@ -48,6 +49,9 @@ export function createFigmaTool({ getScreens, getNode, getImages, getChanged, tr
       })),
       nodeIds: Type.Optional(Type.Array(Type.String(), {
         description: 'mode=images: node ids to render (defaults to the ref\'s node-id)',
+      })),
+      variableMode: Type.Optional(Type.String({
+        description: "mode=variables: export this collection mode (e.g. 'Dark'); default is each collection's default mode",
       })),
       outDir: Type.Optional(Type.String({ description: 'mode=images: output directory (default ./figma-assets)' })),
       format: Type.Optional(Type.Union(IMAGE_FORMATS.map((format) => Type.Literal(format)), {
@@ -74,6 +78,15 @@ export function createFigmaTool({ getScreens, getNode, getImages, getChanged, tr
 
       if (params.mode === 'changed') {
         const text = await getChanged(params.ref, { depth });
+        const t = truncate(text);
+        return {
+          content: [{ type: 'text', text: t.text }],
+          details: { mode: params.mode, ref: params.ref, ...(t.fullOutputPath ? { fullOutputPath: t.fullOutputPath } : {}) },
+        };
+      }
+
+      if (params.mode === 'variables') {
+        const text = await getVariables(params.ref, { mode: params.variableMode });
         const t = truncate(text);
         return {
           content: [{ type: 'text', text: t.text }],

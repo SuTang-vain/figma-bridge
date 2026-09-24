@@ -7,9 +7,10 @@ import {
   visualsOnly,
   layoutOnly,
 } from 'figma-developer-mcp';
-import { fetchFileTree, fetchNode, downloadImages, fileCacheDir } from './api.js';
+import { fetchFileTree, fetchNode, fetchVariables, downloadImages, fileCacheDir } from './api.js';
 import { formatDesign, formatScreens, cacheNote } from './format.js';
 import { parseFigmaUrl, assertNodeId, assertDepth } from './url.js';
+import { formatVariables } from './variables.js';
 import {
   collectNodes,
   loadSnapshot,
@@ -72,6 +73,28 @@ export async function getChanged(ref, { depth = 2 } = {}) {
   if (!prev) return formatBaseline({ fileKey, depth: d, meta });
   const diff = diffSnapshots(new Map(Object.entries(prev.nodes)), nodes);
   return formatChanged({ fileKey, depth: d, diff, prevMeta: prev.meta, meta });
+}
+
+// Design tokens: local variables rendered as CSS custom properties.
+// The endpoint is Enterprise-gated; a 403 is translated into an actionable message.
+export async function getVariables(ref, { mode } = {}) {
+  const { fileKey } = parseFigmaUrl(ref);
+  let payload;
+  try {
+    payload = await fetchVariables(fileKey);
+  } catch (e) {
+    if (/\b403\b/.test(e.message)) {
+      throw new Error(
+        `variables are only available through the Figma REST API on an Enterprise plan `
+        + `(Figma API 403 for ${fileKey}). Raw error: ${e.message}`,
+      );
+    }
+    throw e;
+  }
+  if (payload.error || !payload.meta) {
+    throw new Error('variables endpoint returned an error: ' + JSON.stringify(payload.error ?? payload).slice(0, 200));
+  }
+  return formatVariables(payload.meta, { mode });
 }
 
 // Download rendered images of nodes to a directory.
