@@ -58,13 +58,17 @@ test('bin paths are bare (no ./ prefix) to avoid lockfile churn', () => {
   }
 });
 
-test('typebox is a runtime dependency, pi core is an optional peer', () => {
-  // The extension imports typebox statically, so it must always resolve. Pi core is loaded
-  // dynamically and pi provides it, so it stays an optional peer (and is never auto-installed
-  // for plain CLI users).
-  assert.ok(pkg.dependencies?.typebox, 'typebox must be a runtime dependency');
-  assert.equal(pkg.peerDependencies?.typebox, undefined, 'typebox must not be a peer');
-  assert.ok(pkg.peerDependencies?.['@earendil-works/pi-coding-agent'], 'pi core must be a peerDependency');
+test('pi host packages are wildcard peers, not runtime dependencies', () => {
+  // Pi provides and remaps these modules for extensions. Keeping physical copies in dependencies
+  // can bypass the extension loader and create duplicate runtime modules. A normal npm install
+  // still installs the required typebox peer for standalone extension imports.
+  assert.equal(pkg.peerDependencies?.typebox, '*', 'typebox must be a wildcard peerDependency');
+  assert.equal(pkg.dependencies?.typebox, undefined, 'typebox must not be a runtime dependency');
+  assert.equal(
+    pkg.peerDependencies?.['@earendil-works/pi-coding-agent'],
+    '*',
+    'pi core must be a wildcard peerDependency',
+  );
   assert.equal(pkg.peerDependenciesMeta?.['@earendil-works/pi-coding-agent']?.optional, true);
   assert.equal(pkg.dependencies?.['@earendil-works/pi-coding-agent'], undefined);
 });
